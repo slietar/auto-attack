@@ -1,0 +1,14 @@
+[build-system]
+requires = ["flit_core~=3.2"]
+build-backend = "flit_core.buildapi"
+
+[project]
+dynamic = ["description", "version"]
+name = "autoattack"
+authors = [{ name = "Francesco Croce" }, { name = "Matthias Hein" }]
+classifiers = ["License :: OSI Approved :: MIT License"]
+readme = "README.md"
+requires-python = "~=3.9"
+
+[project.urls]
+Homepage = "https://github.com/fra31/auto-attack"

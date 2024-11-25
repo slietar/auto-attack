@@ -1,5 +1,5 @@
 """
-Code relative to "Reliable evaluation of adversarial robustness with an ensemble of diverse parameter-free attacks"
+Reliable evaluation of adversarial robustness with an ensemble of diverse parameter-free attacks
 """
 
 __version__ = '0.1.0'
