@@ -134,12 +134,12 @@ if __name__ == '__main__':
     tf_model.load_weights(MODEL_PATH)
 
     # remove 'softmax layer' and put it into adapter
-    atk_model = tf.keras.models.Model(inputs=tf_model.input, outputs=tf_model.get_layer(index=-2).output) 
+    atk_model = tf.keras.models.Model(inputs=tf_model.input, outputs=tf_model.get_layer(index=-2).output)
     atk_model.summary()
     model_adapted = utils_tf2.ModelAdapter(atk_model)
 
     # run attack
     adversary = AutoAttack(model_adapted, norm='Linf', eps=epsilon, version='standard', is_tf_model=True)
-    x_adv, y_adv = adversary.run_standard_evaluation(torch_testX, torch_testY, bs=batch_size, return_labels=True)
+    x_adv, y_adv = adversary.run_standard_evaluation(torch_testX, torch_testY, batch_size=batch_size, return_labels=True)
     np_x_adv = np.moveaxis(x_adv.cpu().numpy(), 1, 3)
     np.save("./output/mnist_adv.npy", np_x_adv)

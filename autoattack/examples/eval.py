@@ -27,7 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('--log_path', type=str, default='./log_file.txt')
     parser.add_argument('--version', type=str, default='standard')
     parser.add_argument('--state-path', type=Path, default=None)
-    
+
     args = parser.parse_args()
 
     # load model
@@ -42,32 +42,32 @@ if __name__ == '__main__':
     transform_chain = transforms.Compose(transform_list)
     item = datasets.CIFAR10(root=args.data_dir, train=False, transform=transform_chain, download=True)
     test_loader = data.DataLoader(item, batch_size=1000, shuffle=False, num_workers=0)
-    
+
     # create save dir
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
-    
-    # load attack    
+
+    # load attack
     from autoattack import AutoAttack
     adversary = AutoAttack(model, norm=args.norm, eps=args.epsilon, log_path=args.log_path,
         version=args.version)
-    
+
     l = [x for (x, y) in test_loader]
     x_test = torch.cat(l, 0)
     l = [y for (x, y) in test_loader]
     y_test = torch.cat(l, 0)
-    
+
     # example of custom version
     if args.version == 'custom':
         adversary.attacks_to_run = ['apgd-ce', 'fab']
         adversary.apgd.n_restarts = 2
         adversary.fab.n_restarts = 2
-    
+
     # run attack and save images
     with torch.no_grad():
         if not args.individual:
             adv_complete = adversary.run_standard_evaluation(x_test[:args.n_ex], y_test[:args.n_ex],
-                bs=args.batch_size, state_path=args.state_path)
+                batch_size=args.batch_size, state_path=args.state_path)
 
             torch.save({'adv_complete': adv_complete}, '{}/{}_{}_1_{}_eps_{:.5f}.pth'.format(
                 args.save_dir, 'aa', args.version, adv_complete.shape[0], args.epsilon))
@@ -75,8 +75,7 @@ if __name__ == '__main__':
         else:
             # individual version, each attack is run on all test points
             adv_complete = adversary.run_standard_evaluation_individual(x_test[:args.n_ex],
-                y_test[:args.n_ex], bs=args.batch_size)
-            
+                y_test[:args.n_ex], batch_size=args.batch_size)
+
             torch.save(adv_complete, '{}/{}_{}_individual_1_{}_eps_{:.5f}_plus_{}_cheap_{}.pth'.format(
                 args.save_dir, 'aa', args.version, args.n_ex, args.epsilon))
-                
