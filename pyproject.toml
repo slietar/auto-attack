@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 dynamic = ["description", "version"]
-name = "autoattack"
+name = "pyautoattack"
 authors = [{ name = "Francesco Croce" }, { name = "Matthias Hein" }]
 classifiers = ["License :: OSI Approved :: MIT License"]
 readme = "README.md"

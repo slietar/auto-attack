@@ -48,7 +48,7 @@ if __name__ == '__main__':
         os.makedirs(args.save_dir)
 
     # load attack
-    from autoattack import AutoAttack
+    from pyautoattack import AutoAttack
     adversary = AutoAttack(model, norm=args.norm, eps=args.epsilon, log_path=args.log_path,
         version=args.version)
 

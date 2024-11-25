@@ -11,10 +11,10 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 
 import sys
-#sys.path.insert(0,'..')
+sys.path.insert(0, '..')
 
-from autoattack import AutoAttack, utils_tf
-#
+from pyautoattack import AutoAttack, utils_tf2
+
 
 #%%
 class mnist_loader:
@@ -95,7 +95,7 @@ def mnist_model():
 #%%
 def arg_parser(parser):
 
-    parser.add_argument("--path" , dest ="path", type=str, default='./', help="path of tf.keras model's wieghts")
+    parser.add_argument("--path" , dest ="path", type=str, default='./autoattack/examples/tf_model.weight.h5', help="path of tf.keras model's wieghts")
     args, unknown = parser.parse_known_args()
     if unknown:
         msg = " ".join(unknown)
@@ -114,11 +114,9 @@ if __name__ == '__main__':
     MODEL_PATH = args.path
 
     # init tf/keras
-    tf.compat.v1.keras.backend.clear_session()
-    gpu_options = tf.compat.v1.GPUOptions(allow_growth=True)
-    sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(gpu_options=gpu_options))
-    tf.compat.v1.keras.backend.set_session(sess)
-    tf.compat.v1.keras.backend.set_learning_phase(0)
+    gpus = tf.config.list_physical_devices('GPU')
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
 
     # load data
     batch_size = 1000
@@ -138,10 +136,7 @@ if __name__ == '__main__':
     # remove 'softmax layer' and put it into adapter
     atk_model = tf.keras.models.Model(inputs=tf_model.input, outputs=tf_model.get_layer(index=-2).output)
     atk_model.summary()
-    y_input = tf.placeholder(tf.int64, shape = [None])
-    x_input = atk_model.input
-    logits  = atk_model.output
-    model_adapted = utils_tf.ModelAdapter(logits, x_input, y_input, sess)
+    model_adapted = utils_tf2.ModelAdapter(atk_model)
 
     # run attack
     adversary = AutoAttack(model_adapted, norm='Linf', eps=epsilon, version='standard', is_tf_model=True)
