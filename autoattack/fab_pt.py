@@ -14,14 +14,14 @@ import time
 
 import torch
 
-from autoattack.other_utils import zero_gradients
-from autoattack.fab_base import FABAttack
+from .other_utils import zero_gradients
+from .fab_base import FABAttack
 
 class FABAttack_PT(FABAttack):
     """
     Fast Adaptive Boundary Attack (Linf, L2, L1)
     https://arxiv.org/abs/1907.02044
-    
+
     :param predict:       forward pass function
     :param norm:          Lp-norm to minimize ('Linf', 'L2', 'L1' supported)
     :param n_restarts:    number of random restarts

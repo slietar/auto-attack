@@ -3,7 +3,7 @@ import warnings
 import math
 import sys
 
-from autoattack.other_utils import L2_norm
+from .other_utils import L2_norm
 
 
 funcs = {'grad': 0,
@@ -91,7 +91,7 @@ def tracefunc(frame, event, args):
     if event == 'call' and frame.f_code.co_name in funcs.keys():
         funcs[frame.f_code.co_name] += 1
 
-        
+
 def check_dynamic(model, x, is_tf_model=False, logger=None):
     if is_tf_model:
         msg = 'the check for dynamic defenses is not currently supported'
@@ -138,5 +138,3 @@ def check_n_classes(n_cls, attacks_to_run, apgd_targets, fab_targets,
             warnings.warn(Warning(msg))
         else:
             logger.log(f'Warning: {msg}')
-
-

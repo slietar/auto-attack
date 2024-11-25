@@ -12,8 +12,8 @@ import torch.nn.functional as F
 import math
 import random
 
-from autoattack.other_utils import L0_norm, L1_norm, L2_norm
-from autoattack.checks import check_zero_gradients
+from .other_utils import L0_norm, L1_norm, L2_norm
+from .checks import check_zero_gradients
 
 
 def L1_projection(x2, y2, eps1):
@@ -34,36 +34,36 @@ def L1_projection(x2, y2, eps1):
     u = torch.min(torch.zeros_like(y), u)
     l = -torch.clone(y).abs()
     d = u.clone()
-    
+
     bs, indbs = torch.sort(-torch.cat((u, l), 1), dim=1)
     bs2 = torch.cat((bs[:, 1:], torch.zeros(bs.shape[0], 1).to(bs.device)), 1)
-    
+
     inu = 2*(indbs < u.shape[1]).float() - 1
     size1 = inu.cumsum(dim=1)
-    
+
     s1 = -u.sum(dim=1)
-    
+
     c = eps1 - y.clone().abs().sum(dim=1)
     c5 = s1 + c < 0
     c2 = c5.nonzero().squeeze(1)
-    
+
     s = s1.unsqueeze(-1) + torch.cumsum((bs2 - bs) * size1, dim=1)
-    
+
     if c2.nelement != 0:
-    
+
       lb = torch.zeros_like(c2).float()
       ub = torch.ones_like(lb) *(bs.shape[1] - 1)
-      
+
       #print(c2.shape, lb.shape)
-      
+
       nitermax = torch.ceil(torch.log2(torch.tensor(bs.shape[1]).float()))
       counter2 = torch.zeros_like(lb).long()
       counter = 0
-          
+
       while counter < nitermax:
         counter4 = torch.floor((lb + ub) / 2.)
         counter2 = counter4.type(torch.LongTensor)
-        
+
         c8 = s[c2, counter2] + c[c2] < 0
         ind3 = c8.nonzero().squeeze(1)
         ind32 = (~c8).nonzero().squeeze(1)
@@ -72,14 +72,14 @@ def L1_projection(x2, y2, eps1):
             lb[ind3] = counter4[ind3]
         if ind32.nelement != 0:
             ub[ind32] = counter4[ind32]
-        
+
         #print(lb, ub)
         counter += 1
-        
+
       lb2 = lb.long()
       alpha = (-s[c2, lb2] -c[c2]) / size1[c2, lb2 + 1] + bs2[c2, lb2]
       d[c2] = -torch.min(torch.max(-u[c2], alpha.unsqueeze(-1)), -l[c2])
-    
+
     return (sigma * d).view(x2.shape)
 
 
@@ -122,7 +122,7 @@ class APGDAttack():
         """
         AutoPGD implementation in PyTorch
         """
-        
+
         self.model = predict
         self.n_iter = n_iter
         self.eps = eps
@@ -197,7 +197,7 @@ class APGDAttack():
             1. - ind)) / (x_sorted[:, -1] - x_sorted[:, -3] + 1e-12)
 
     #
-    
+
     def attack_single_run(self, x, y, x_init=None):
         if len(x.shape) < self.ndims:
             x = x.unsqueeze(0)
@@ -215,18 +215,18 @@ class APGDAttack():
             t = torch.randn(x.shape).to(self.device).detach()
             delta = L1_projection(x, t, self.eps)
             x_adv = x + t + delta
-            
-        
-        
-        
-        
+
+
+
+
+
         if not x_init is None:
             x_adv = x_init.clone()
             if self.norm == 'L1' and self.verbose:
                 print('[custom init] L1 perturbation {:.5f}'.format(
                     (x_adv - x).abs().view(x.shape[0], -1).sum(1).max()))
-            
-        
+
+
         x_adv = x_adv.clamp(0., 1.)
         x_best = x_adv.clone()
         x_best_adv = x_adv.clone()
@@ -259,8 +259,8 @@ class APGDAttack():
                 criterion_indiv = self.model.get_logits_loss_grad_target
             else:
                 raise ValueError('unknowkn loss')
-        
-        
+
+
         x_adv.requires_grad_()
         grad = torch.zeros_like(x)
         for _ in range(self.eot_iter):
@@ -278,14 +278,14 @@ class APGDAttack():
                     logits, loss_indiv, grad_curr = criterion_indiv(x_adv, y,
                         self.y_target)
                 grad += grad_curr
-        
+
         grad /= float(self.eot_iter)
         grad_best = grad.clone()
 
         if self.loss in ['dlr', 'dlr-targeted']:
             # check if there are zero gradients
             check_zero_gradients(grad, logger=self.logger)
-        
+
         acc = logits.detach().max(1)[1] == y
         acc_steps[0] = acc + 0
         loss_best = loss_indiv.detach().clone()
@@ -350,12 +350,12 @@ class APGDAttack():
                     sparsegrad = grad * (grad.abs() >= grad_topk).float()
                     x_adv_1 = x_adv + step_size * sparsegrad.sign() / (
                         L1_norm(sparsegrad.sign(), keepdim=True) + 1e-10)
-                    
+
                     delta_u = x_adv_1 - x
                     delta_p = L1_projection(x, delta_u, self.eps)
                     x_adv_1 = x + delta_u + delta_p
-                    
-                    
+
+
                 x_adv = x_adv_1 + 0.
 
             ### get gradient
@@ -367,7 +367,7 @@ class APGDAttack():
                         logits = self.model(x_adv)
                         loss_indiv = criterion_indiv(logits, y)
                         loss = loss_indiv.sum()
-    
+
                     grad += torch.autograd.grad(loss, [x_adv])[0].detach()
                 else:
                     if self.y_target is None:
@@ -375,7 +375,7 @@ class APGDAttack():
                     else:
                         logits, loss_indiv, grad_curr = criterion_indiv(x_adv, y, self.y_target)
                     grad += grad_curr
-            
+
             grad /= float(self.eot_iter)
 
             pred = logits.detach().max(1)[1] == y
@@ -389,7 +389,7 @@ class APGDAttack():
                 print('[m] iteration: {} - best loss: {:.6f} - robust accuracy: {:.2%}{}'.format(
                     i, loss_best.sum(), acc.float().mean(), str_stats))
                 #print('pert {}'.format((x - x_best_adv).abs().view(x.shape[0], -1).sum(-1).max()))
-            
+
             ### check step size
             with torch.no_grad():
               y1 = loss_indiv.detach().clone()
@@ -412,17 +412,17 @@ class APGDAttack():
                           fl_reduce_no_impr)
                       reduced_last_check = fl_oscillation.clone()
                       loss_best_last_check = loss_best.clone()
-    
+
                       if fl_oscillation.sum() > 0:
                           ind_fl_osc = (fl_oscillation > 0).nonzero().squeeze()
                           step_size[ind_fl_osc] /= 2.0
                           n_reduced = fl_oscillation.sum()
-    
+
                           x_adv[ind_fl_osc] = x_best[ind_fl_osc].clone()
                           grad[ind_fl_osc] = grad_best[ind_fl_osc].clone()
 
                       k = max(k - self.size_decr, self.n_iter_min)
-                  
+
                   elif self.norm == 'L1':
                       sp_curr = L0_norm(x_best - x)
                       fl_redtopk = (sp_curr / sp_old) < .95
@@ -431,15 +431,15 @@ class APGDAttack():
                       step_size[~fl_redtopk] /= adasp_redstep
                       step_size.clamp_(alpha * self.eps / adasp_minstep, alpha * self.eps)
                       sp_old = sp_curr.clone()
-                  
+
                       x_adv[fl_redtopk] = x_best[fl_redtopk].clone()
                       grad[fl_redtopk] = grad_best[fl_redtopk].clone()
-                  
+
                   counter3 = 0
                   #k = max(k - self.size_decr, self.n_iter_min)
 
         #
-        
+
         return (x_best, acc, loss_best, x_best_adv)
 
     def perturb(self, x, y=None, best_loss=False, x_init=None):
@@ -480,8 +480,8 @@ class APGDAttack():
                 '--------------------------')
             print('initial accuracy: {:.2%}'.format(acc.float().mean()))
 
-        
-        
+
+
         if self.use_largereps:
             epss = [3. * self.eps_orig, 2. * self.eps_orig, 1. * self.eps_orig]
             iters = [.3 * self.n_iter_orig, .3 * self.n_iter_orig,
@@ -491,7 +491,7 @@ class APGDAttack():
             if self.verbose:
                 print('using schedule [{}x{}]'.format('+'.join([str(c
                     ) for c in epss]), '+'.join([str(c) for c in iters])))
-        
+
         startt = time.time()
         if not best_loss:
             torch.random.manual_seed(self.seed)
@@ -504,8 +504,8 @@ class APGDAttack():
                 if ind_to_fool.numel() != 0:
                     x_to_fool = x[ind_to_fool].clone()
                     y_to_fool = y[ind_to_fool].clone()
-                    
-                    
+
+
                     if not self.use_largereps:
                         res_curr = self.attack_single_run(x_to_fool, y_to_fool)
                     else:
@@ -601,8 +601,8 @@ class APGDAttack_targeted(APGDAttack):
 
     def ce_loss_targeted(self, x, y):
         return -1. * F.cross_entropy(x, self.y_target, reduction='none')
-    
-    
+
+
     def perturb(self, x, y=None, x_init=None):
         """
         :param x:           clean images
@@ -641,7 +641,7 @@ class APGDAttack_targeted(APGDAttack):
         torch.cuda.random.manual_seed(self.seed)
 
         #
-        
+
         if self.use_largereps:
             epss = [3. * self.eps_orig, 2. * self.eps_orig, 1. * self.eps_orig]
             iters = [.3 * self.n_iter_orig, .3 * self.n_iter_orig,
@@ -651,7 +651,7 @@ class APGDAttack_targeted(APGDAttack):
             if self.verbose:
                 print('using schedule [{}x{}]'.format('+'.join([str(c
                     ) for c in epss]), '+'.join([str(c) for c in iters])))
-        
+
         for target_class in range(2, self.n_target_classes + 2):
             for counter in range(self.n_restarts):
                 ind_to_fool = acc.nonzero().squeeze()
@@ -660,7 +660,7 @@ class APGDAttack_targeted(APGDAttack):
                 if ind_to_fool.numel() != 0:
                     x_to_fool = x[ind_to_fool].clone()
                     y_to_fool = y[ind_to_fool].clone()
-                    
+
                     if not self.is_tf_model:
                         output = self.model(x_to_fool)
                     else:
@@ -684,4 +684,3 @@ class APGDAttack_targeted(APGDAttack):
                             time.time() - startt))
 
         return adv
-

@@ -15,7 +15,7 @@ import time
 import math
 import torch.nn.functional as F
 
-from autoattack.autopgd_base import L1_projection
+from .autopgd_base import L1_projection
 
 class SquareAttack():
     """
@@ -50,7 +50,7 @@ class SquareAttack():
         """
         Square Attack implementation in PyTorch
         """
-        
+
         self.predict = predict
         self.norm = norm
         self.n_queries = n_queries
@@ -64,7 +64,7 @@ class SquareAttack():
         self.rescale_schedule = resc_schedule
         self.device = device
         self.return_all = False
-    
+
     def margin_and_loss(self, x, y):
         """
         :param y:        correct labels if untargeted else target labels
@@ -130,7 +130,7 @@ class SquareAttack():
         elif self.norm == 'L1':
             t = x.abs().view(x.shape[0], -1).sum(dim=-1)
             return x / (t.view(-1, *([1] * self.ndims)) + 1e-12)
-    
+
     def lp_norm(self, x):
         if self.norm == 'L2':
             t = (x ** 2).view(x.shape[0], -1).sum(-1).sqrt()
@@ -139,7 +139,7 @@ class SquareAttack():
         elif self.norm == 'L1':
             t = x.abs().view(x.shape[0], -1).sum(dim=-1)
             return t.view(-1, *([1] * self.ndims))
-    
+
     def eta_rectangles(self, x, y):
         delta = torch.zeros([x, y]).to(self.device)
         x_c, y_c = x // 2 + 1, y // 2 + 1
@@ -153,9 +153,9 @@ class SquareAttack():
                   self.device) ** 2)
               counter2[0] -= 1
               counter2[1] -= 1
-    
+
             delta /= (delta ** 2).sum(dim=(0, 1), keepdim=True).sqrt()
-        
+
         elif self.norm == 'L1':
             for counter in range(0, max(x_c, y_c)):
               delta[max(counter2[0], 0):min(counter2[0] + (2*counter + 1), x),
@@ -164,9 +164,9 @@ class SquareAttack():
                   self.device) ** 4)
               counter2[0] -= 1
               counter2[1] -= 1
-    
+
             delta /= delta.abs().sum(dim=(), keepdim=True)
-        
+
         return delta
 
     def eta(self, s):
@@ -175,7 +175,7 @@ class SquareAttack():
             delta[:s // 2] = self.eta_rectangles(s // 2, s)
             delta[s // 2:] = -1. * self.eta_rectangles(s - s // 2, s)
             delta /= (delta ** 2).sum(dim=(0, 1), keepdim=True).sqrt()
-        
+
         elif self.norm == 'L1':
             delta = torch.zeros([s, s]).to(self.device)
             delta[:s // 2] = self.eta_rectangles(s // 2, s)
@@ -183,7 +183,7 @@ class SquareAttack():
             #delta = self.eta_rectangles(s, s)
             delta /= delta.abs().sum(dim=(), keepdim=True)
             #delta *= (torch.rand([1]) - .5).sign().to(self.device)
-        
+
         if torch.rand([1]) > 0.5:
             delta = delta.permute([1, 0])
 
@@ -229,20 +229,20 @@ class SquareAttack():
                 print('square attack may not work properly for non-square image.')
                 print('for details please refer to https://github.com/fra31/auto-attack/issues/95')
 
-            
+
             if self.norm == 'Linf':
                 x_best = torch.clamp(x + self.eps * self.random_choice(
                     [x.shape[0], c, 1, w]), 0., 1.)
                 margin_min, loss_min = self.margin_and_loss(x_best, y)
                 n_queries = torch.ones(x.shape[0]).to(self.device)
                 s_init = int(math.sqrt(self.p_init * n_features / c))
-                
+
                 if (margin_min < 0.0).all():
                     return n_queries, x_best
-                
+
                 for i_iter in range(self.n_queries):
                     idx_to_fool = (margin_min > 0.0).nonzero().squeeze()
-                    
+
                     x_curr = self.check_shape(x[idx_to_fool])
                     x_best_curr = self.check_shape(x_best[idx_to_fool])
                     y_curr = y[idx_to_fool]
@@ -250,7 +250,7 @@ class SquareAttack():
                         y_curr = y_curr.unsqueeze(0)
                     margin_min_curr = margin_min[idx_to_fool]
                     loss_min_curr = loss_min[idx_to_fool]
-                    
+
                     p = self.p_selection(i_iter)
                     s = max(int(round(math.sqrt(p * n_features / c))), 1)
                     s = min(s, min(h, w))
@@ -259,13 +259,13 @@ class SquareAttack():
                     new_deltas = torch.zeros([c, h, w]).to(self.device)
                     new_deltas[:, vh:vh + s, vw:vw + s
                         ] = 2. * self.eps * self.random_choice([c, 1, 1])
-                    
+
                     x_new = x_best_curr + new_deltas
                     x_new = torch.min(torch.max(x_new, x_curr - self.eps),
                         x_curr + self.eps)
                     x_new = torch.clamp(x_new, 0., 1.)
                     x_new = self.check_shape(x_new)
-                    
+
                     margin, loss = self.margin_and_loss(x_new, y_curr)
 
                     # update loss if new loss is better
@@ -301,7 +301,7 @@ class SquareAttack():
 
                     if ind_succ.numel() == n_ex_total:
                         break
-              
+
             elif self.norm == 'L2':
                 delta_init = torch.zeros_like(x)
                 s = h // 5
@@ -321,7 +321,7 @@ class SquareAttack():
                 margin_min, loss_min = self.margin_and_loss(x_best, y)
                 n_queries = torch.ones(x.shape[0]).to(self.device)
                 s_init = int(math.sqrt(self.p_init * n_features / c))
-                
+
                 if (margin_min < 0.0).all():
                     return n_queries, x_best
 
@@ -415,7 +415,7 @@ class SquareAttack():
 
                     assert (x_new != x_new).sum() == 0
                     assert (x_best != x_best).sum() == 0
-                    
+
                     if ind_succ.numel() == n_ex_total:
                         break
 
@@ -440,7 +440,7 @@ class SquareAttack():
                 margin_min, loss_min = self.margin_and_loss(x_best, y)
                 n_queries = torch.ones(x.shape[0]).to(self.device)
                 s_init = int(math.sqrt(self.p_init * n_features / c))
-                
+
                 if (margin_min < 0.0).all():
                     return n_queries, x_best
 
@@ -462,7 +462,7 @@ class SquareAttack():
                         s += 1
                         #pass
                     s = min(s, min(h, w))
-                    
+
                     vh = self.random_int(0, h - s)
                     vw = self.random_int(0, w - s)
                     new_deltas_mask = torch.zeros_like(x_curr)
@@ -537,13 +537,13 @@ class SquareAttack():
                             '- max pert={:.3f}'.format(norms_image.max().item()),
                             #'- old pert={:.3f}'.format(norms_image_old.max().item())
                             )
-                    
+
                     assert (x_new != x_new).sum() == 0
                     assert (x_best != x_best).sum() == 0
-        
+
                     if ind_succ.numel() == n_ex_total:
                         break
-        
+
         return n_queries, x_best
 
     def perturb(self, x, y=None):
@@ -615,4 +615,3 @@ class SquareAttack():
         else:
             print('returning final points')
             return adv_all
-

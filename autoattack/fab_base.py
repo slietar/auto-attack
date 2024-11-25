@@ -14,7 +14,7 @@ import time
 
 import torch
 
-from autoattack.fab_projections import projection_linf, projection_l2,\
+from .fab_projections import projection_linf, projection_l2,\
     projection_l1
 
 DEFAULT_EPS_DICT_BY_NORM = {'Linf': .3, 'L2': 1., 'L1': 5.0}
@@ -24,7 +24,7 @@ class FABAttack():
     """
     Fast Adaptive Boundary Attack (Linf, L2, L1)
     https://arxiv.org/abs/1907.02044
-    
+
     :param norm:          Lp-norm to minimize ('Linf', 'L2', 'L1' supported)
     :param n_restarts:    number of random restarts
     :param n_iter:        number of iterations

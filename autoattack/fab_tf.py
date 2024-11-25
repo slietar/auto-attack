@@ -11,14 +11,14 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import torch
-from autoattack.fab_base import FABAttack
+from .fab_base import FABAttack
 
 
 class FABAttack_TF(FABAttack):
     """
     Fast Adaptive Boundary Attack (Linf, L2, L1)
     https://arxiv.org/abs/1907.02044
-    
+
     :param model:         TF_model
     :param norm:          Lp-norm to minimize ('Linf', 'L2', 'L1' supported)
     :param n_restarts:    number of random restarts
@@ -61,7 +61,7 @@ class FABAttack_TF(FABAttack):
                          targeted,
                          device,
                          n_target_classes)
-    
+
     def _predict_fn(self, x):
         return self.model.predict(x)
 
@@ -70,7 +70,7 @@ class FABAttack_TF(FABAttack):
             outputs = self._predict_fn(x)
         _, y = torch.max(outputs, dim=1)
         return y
-    
+
     def get_diff_logits_grads_batch(self, imgs, la):
         y2, g2 = self.model.grad_logits(imgs)
         df = y2 - y2[torch.arange(imgs.shape[0]), la].unsqueeze(1)
