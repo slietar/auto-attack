@@ -1,7 +1,7 @@
-import torch
-import warnings
-import math
 import sys
+import warnings
+
+import torch
 
 from .other_utils import L2_norm
 
@@ -38,7 +38,7 @@ def check_randomized(model, x, y, bs=250, n=5, alpha=1e-4, logger=None):
         if logger is None:
             warnings.warn(Warning(msg))
         else:
-            logger.log(f'Warning: {msg}')
+            logger.warning(msg)
 
 
 def check_range_output(model, x, alpha=1e-5, logger=None):
@@ -53,7 +53,7 @@ def check_range_output(model, x, alpha=1e-5, logger=None):
         if logger is None:
             warnings.warn(Warning(msg))
         else:
-            logger.log(f'Warning: {msg}')
+            logger.warning(msg)
     return output.shape[-1]
 
 
@@ -67,7 +67,7 @@ def check_zero_gradients(grad, logger=None):
         if logger is None:
             warnings.warn(Warning(msg))
         else:
-            logger.log(f'Warning: {msg}')
+            logger.warning(msg)
 
 
 def check_square_sr(acc_dict, alpha=.002, logger=None):
@@ -83,7 +83,7 @@ def check_square_sr(acc_dict, alpha=.002, logger=None):
             if logger is None:
                 warnings.warn(Warning(msg))
             else:
-                logger.log(f'Warning: {msg}')
+                logger.warning(msg)
 
 
 ''' from https://stackoverflow.com/questions/26119521/counting-function-calls-python '''
@@ -110,7 +110,7 @@ def check_dynamic(model, x, is_tf_model=False, logger=None):
         if logger is None:
             warnings.warn(Warning(msg))
         else:
-            logger.log(f'Warning: {msg}')
+            logger.warning(msg)
     #sys.settrace(None)
 
 
@@ -137,4 +137,4 @@ def check_n_classes(n_cls, attacks_to_run, apgd_targets, fab_targets,
         if logger is None:
             warnings.warn(Warning(msg))
         else:
-            logger.log(f'Warning: {msg}')
+            logger.warning(msg)
